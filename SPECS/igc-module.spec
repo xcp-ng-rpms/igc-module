@@ -14,7 +14,7 @@ Requires(post): /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
 
 %description
-igc-module Linux Device Driver source.
+Intel igc device drivers for the Linux Kernel version %{kernel_version}.
 
 %prep
 %setup -q -n %{name}-%{version}
