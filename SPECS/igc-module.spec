@@ -21,7 +21,7 @@ igc-module Linux Device Driver source.
 %setup -q -n %{name}-%{version}
 
 %build
-%{__make} -C /lib/modules/%{uname}/build M=$(pwd) modules
+%{make_build} -C /lib/modules/%{uname}/build M=$(pwd) modules
 
 %install
 %{__make} -C /lib/modules/%{uname}/build M=$(pwd) INSTALL_MOD_PATH=%{buildroot} INSTALL_MOD_DIR=%{module_dir} DEPMOD=/bin/true modules_install
