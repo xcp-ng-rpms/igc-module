@@ -44,7 +44,6 @@ find %{buildroot}/lib/modules/%{uname} -name "*.ko" -type f | xargs chmod u+x
 %{regenerate_initrd_posttrans}
 
 %files
-%defattr(-,root,root,-)
 /lib/modules/%{uname}/*/*.ko
 
 %changelog
