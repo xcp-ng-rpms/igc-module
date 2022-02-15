@@ -46,7 +46,6 @@ find %{buildroot}/lib/modules/%{uname} -name "*.ko" -type f | xargs chmod u+x
 %files
 %defattr(-,root,root,-)
 /lib/modules/%{uname}/*/*.ko
-%doc
 
 %changelog
 * Tue Feb 15 2022 Rushikesh Jadhav <rushikesh7@gmail.com> - 4.20.17
