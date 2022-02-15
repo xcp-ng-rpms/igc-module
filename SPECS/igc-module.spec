@@ -9,7 +9,6 @@ License: GPL
 Source: %{name}-%{version}.tar.gz
 
 BuildRequires: kernel-devel
-Provides: vendor-driver
 Requires: kernel-uname-r = %{kernel_version}
 Requires(post): /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
