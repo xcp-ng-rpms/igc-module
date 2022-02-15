@@ -50,5 +50,5 @@ find %{buildroot}/lib/modules/%{uname} -name "*.ko" -type f | xargs chmod u+x
 
 %changelog
 * Tue Feb 15 2022 Rushikesh Jadhav <rushikesh7@gmail.com> - 4.20.17
-- Added driver igc-module from kernel 4.20.17
+- Added driver igc from kernel 4.20.17
 
