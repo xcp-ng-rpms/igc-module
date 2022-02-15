@@ -17,7 +17,7 @@ Requires(postun): /usr/sbin/depmod
 Intel igc device drivers for the Linux Kernel version %{kernel_version}.
 
 %prep
-%setup -q -n %{name}-%{version}
+%autosetup -n %{driver_name}-%{version}
 
 %build
 %{make_build} -C /lib/modules/%{uname}/build M=$(pwd) modules
