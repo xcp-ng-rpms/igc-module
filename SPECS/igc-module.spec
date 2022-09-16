@@ -3,7 +3,7 @@
 Summary: Driver for igc-module
 Name: igc-module
 Version: 4.20.17
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
 Source: %{name}-%{version}.tar.gz
@@ -47,6 +47,9 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 /lib/modules/%{kernel_version}/*/*.ko
 
 %changelog
-* Tue Feb 15 2022 Rushikesh Jadhav <rushikesh7@gmail.com> - 4.20.17
+* Fri Sep 16 2022 Samuel Verschelde <stormi-xcp@ylix.fr> - 4.20.17-2
+- Rebuild for XCP-ng 8.3
+
+* Tue Feb 15 2022 Rushikesh Jadhav <rushikesh7@gmail.com> - 4.20.17-1
 - Added driver igc from kernel 4.20.17
 
