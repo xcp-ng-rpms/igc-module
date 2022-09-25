@@ -1,3 +1,6 @@
+%define vendor_name Intel
+%define vendor_label intel
+%define driver_name igc
 %define module_dir extra
 
 Summary: Driver for igc-module
