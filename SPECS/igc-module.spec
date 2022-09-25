@@ -12,7 +12,7 @@ License: GPL
 Source: %{name}-%{version}.tar.gz
 
 Patch0: 0001-makefile.patch
-Patch0: 0002-backport.patch
+Patch1: 0002-backport.patch
 
 BuildRequires: gcc
 BuildRequires: kernel-devel
