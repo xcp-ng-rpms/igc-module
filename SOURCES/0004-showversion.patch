@@ -52,8 +52,33 @@
  	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
  		sizeof(drvinfo->bus_info));
 
---- igc-module-5.10.145/igc_phy.h	2022-09-28 09:10:41.000000000 +0000
-+++ igc-module-5.10.146/igc_phy.h	2022-10-02 00:10:57.441665064 +0000
+@@ -566,6 +566,24 @@
+ 	return ret_val;
+ }
+ 
++/**
++ * igc_read_phy_fw_version - Read gPHY firmware version
++ * @hw: pointer to the HW structure
++ */
++u16 igc_read_phy_fw_version(struct igc_hw *hw)
++{
++	struct igc_phy_info *phy = &hw->phy;
++	u16 gphy_version = 0;
++	u16 ret_val;
++
++	/* NVM image version is reported as firmware version for i225 device */
++	ret_val = phy->ops.read_reg(hw, IGC_GPHY_VERSION, &gphy_version);
++	if (ret_val)
++		hw_dbg("igc_phy: read wrong gphy version\n");
++
++	return gphy_version;
++}
++
+ static void igc_ethtool_get_ringparam(struct net_device *netdev,
+ 				      struct ethtool_ringparam *ring)
+ {
+--- a/igc_phy.h	2022-09-28 09:10:41.000000000 +0000
++++ b/igc_phy.h	2022-10-02 00:10:57.441665064 +0000
 @@ -17,5 +17,6 @@
  void igc_power_down_phy_copper(struct igc_hw *hw);
  s32 igc_write_phy_reg_gpy(struct igc_hw *hw, u32 offset, u16 data);
@@ -61,3 +86,13 @@
 +u16 igc_read_phy_fw_version(struct igc_hw *hw);
  
  #endif
+--- a/igc_regs.h	2022-10-02 02:06:58.541888758 +0000
++++ b/igc_regs.h	2022-10-02 02:07:38.273955889 +0000
+@@ -13,6 +13,7 @@
+ #define IGC_MDICNFG		0x00E04  /* MDC/MDIO Configuration - RW */
+ #define IGC_CONNSW		0x00034  /* Copper/Fiber switch control - RW */
+ #define IGC_I225_PHPM		0x00E14  /* I225 PHY Power Management */
++#define IGC_GPHY_VERSION	0x0001E  /* I225 gPHY Firmware Version */
+ 
+ /* Internal Packet Buffer Size Registers */
+ #define IGC_RXPBS		0x02404  /* Rx Packet Buffer Size - RW */

@@ -3,7 +3,7 @@
 Summary: Driver for igc-module
 Name: igc-module
 Version: 5.10.146
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
 Source: %{name}-%{version}.tar.gz
