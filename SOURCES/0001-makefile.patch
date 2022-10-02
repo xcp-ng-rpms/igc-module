@@ -1,5 +1,8 @@
---- a/Makefile	2022-09-23 12:17:01.000000000 +0000
-+++ b/Makefile	2022-09-24 07:28:54.771360013 +0000
+
+### Change standard makefile for standalone module build
+
+--- a/Makefile	2022-09-28 09:10:41.000000000 +0000
++++ b/Makefile	2022-10-02 00:10:57.433665049 +0000
 @@ -5,7 +5,7 @@
  # Intel(R) I225-LM/I225-V 2.5G Ethernet Controller
  #

@@ -1,130 +1,20 @@
---- a/igc.h	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc.h	2022-09-24 06:27:24.035810356 +0000
-@@ -217,6 +217,7 @@
- 	struct timecounter tc;
- 	struct timespec64 prev_ptp_time; /* Pre-reset PTP clock */
- 	ktime_t ptp_reset_start; /* Reset time in clock mono */
-+	char fw_version[32];
- };
- 
- void igc_up(struct igc_adapter *adapter);
---- a/igc_base.c	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc_base.c	2022-09-24 07:07:24.414598890 +0000
-@@ -205,6 +205,7 @@
- 	case IGC_DEV_ID_I220_V:
- 	case IGC_DEV_ID_I225_K:
- 	case IGC_DEV_ID_I225_K2:
-+	case IGC_DEV_ID_I226_K:
- 	case IGC_DEV_ID_I225_LMVP:
- 	case IGC_DEV_ID_I225_IT:
- 	case IGC_DEV_ID_I226_LM:
---- a/igc_defines.h	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc-module/igc_defines.h	2022-09-24 06:29:34.767001177 +0000
-@@ -160,6 +160,7 @@
- #define IGC_NVM_RW_REG_START	1    /* Start operation */
- #define IGC_NVM_RW_ADDR_SHIFT	2    /* Shift to the address bits */
- #define IGC_NVM_POLL_READ	0    /* Flag for polling for read complete */
-+#define IGC_NVM_DEV_STARTER	5    /* Dev_starter Version */
- 
- /* NVM Word Offsets */
- #define NVM_CHECKSUM_REG		0x003F
---- a/igc_ethtool.c	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc_ethtool.c	2022-09-24 06:43:08.841321756 +0000
-@@ -129,10 +129,27 @@
- 				    struct ethtool_drvinfo *drvinfo)
- {
- 	struct igc_adapter *adapter = netdev_priv(netdev);
-+	struct igc_hw *hw = &adapter->hw;
-+	u16 nvm_version = 0;
-+	u16 gphy_version;
- 
- 	strlcpy(drvinfo->driver,  igc_driver_name, sizeof(drvinfo->driver));
- 
--	/* add fw_version here */
-+	/* NVM image version is reported as firmware version for i225 device */
-+	hw->nvm.ops.read(hw, IGC_NVM_DEV_STARTER, 1, &nvm_version);
-+
-+	/* gPHY firmware version is reported as PHY FW version */
-+	gphy_version = igc_read_phy_fw_version(hw);
-+
-+	scnprintf(adapter->fw_version,
-+			sizeof(adapter->fw_version),
-+			"%x:%x",
-+			nvm_version,
-+			gphy_version);
-+
-+	strscpy(drvinfo->fw_version, adapter->fw_version,
-+		sizeof(drvinfo->fw_version));
-+
- 	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
- 		sizeof(drvinfo->bus_info));
- 
-@@ -1018,11 +1035,11 @@
- 	switch (cmd->flow_type) {
- 	case TCP_V4_FLOW:
- 		cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
--		fallthrough;
-+//		fallthrough;
- 	case UDP_V4_FLOW:
- 		if (adapter->flags & IGC_FLAG_RSS_FIELD_IPV4_UDP)
- 			cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
--		fallthrough;
-+//		fallthrough;
- 	case SCTP_V4_FLOW:
- 	case AH_ESP_V4_FLOW:
- 	case AH_V4_FLOW:
-@@ -1032,11 +1049,11 @@
- 		break;
- 	case TCP_V6_FLOW:
- 		cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
--		fallthrough;
-+//		fallthrough;
- 	case UDP_V6_FLOW:
- 		if (adapter->flags & IGC_FLAG_RSS_FIELD_IPV6_UDP)
- 			cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
--		fallthrough;
-+//		fallthrough;
- 	case SCTP_V6_FLOW:
- 	case AH_ESP_V6_FLOW:
- 	case AH_V6_FLOW:
-@@ -1899,7 +1916,7 @@
- }
- 
- static const struct ethtool_ops igc_ethtool_ops = {
--	.supported_coalesce_params = ETHTOOL_COALESCE_USECS,
-+//	.supported_coalesce_params = ETHTOOL_COALESCE_USECS,
- 	.get_drvinfo		= igc_ethtool_get_drvinfo,
- 	.get_regs_len		= igc_ethtool_get_regs_len,
- 	.get_regs		= igc_ethtool_get_regs,
---- a/igc_main.c	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc_main.c	2022-09-24 07:08:34.542096031 +0000
-@@ -46,6 +46,7 @@
- 	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I220_V), board_base },
- 	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I225_K), board_base },
- 	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I225_K2), board_base },
-+	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I226_K), board_base },
- 	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I225_LMVP), board_base },
- 	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I225_IT), board_base },
- 	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I226_LM), board_base },
-@@ -980,7 +981,7 @@
- 	switch (skb->csum_offset) {
- 	case offsetof(struct tcphdr, check):
- 		type_tucmd = IGC_ADVTXD_TUCMD_L4T_TCP;
--		fallthrough;
-+//		fallthrough;
- 	case offsetof(struct udphdr, check):
- 		break;
- 	case offsetof(struct sctphdr, checksum):
-@@ -992,7 +993,7 @@
- 			type_tucmd = IGC_ADVTXD_TUCMD_L4T_SCTP;
- 			break;
- 		}
--		fallthrough;
-+//		fallthrough;
- 	default:
- 		skb_checksum_help(skb);
- 		goto csum_failed;
-@@ -1190,7 +1191,7 @@
+
+### Backport code to kernel 4.19 by removing nerwer code that does not work
+### in the older kernel and cange functions back to older ones that work in 4.19
+### 	remove ETHTOOL_COALESCE_USECS
+### 	remove TC_SETUP_QDISC_TAPRIO
+### 	change net_prefetch to prefetch
+### 	change netdev_xmit_more to skb->xmit_more
+### 	change DPM_FLAG_NO_DIRECT_COMPLETE to DPM_FLAG_NEVER_SKIP
+###
+### Change MTU change notice to netdev_info becuase it's not debugging
+###
+###
+### Change gettimex64 back to gettime64
+
+--- a/igc_main.c	2022-09-28 09:10:41.000000000 +0000
++++ b/igc_main.c	2022-10-02 01:04:09.516114169 +0000
+@@ -1190,7 +1190,7 @@
  	/* Make sure there is space in the ring for the next send. */
  	igc_maybe_stop_tx(tx_ring, DESC_NEEDED);
  
@@ -133,7 +23,7 @@
  		writel(i, tx_ring->tail);
  	}
  
-@@ -1561,7 +1562,7 @@
+@@ -1561,7 +1561,7 @@
  	struct sk_buff *skb;
  
  	/* prefetch first cache line of first page */
@@ -142,7 +32,7 @@
  
  	/* build an skb around the page buffer */
  	skb = build_skb(va - IGC_SKB_PAD, truesize);
-@@ -1597,7 +1598,7 @@
+@@ -1597,7 +1597,7 @@
  	struct sk_buff *skb;
  
  	/* prefetch first cache line of first page */
@@ -151,7 +41,7 @@
  
  	/* allocate a skb to store the frags */
  	skb = napi_alloc_skb(&rx_ring->q_vector->napi, IGC_RX_HDR_LEN);
-@@ -1613,7 +1614,7 @@
+@@ -1613,7 +1613,7 @@
  	/* Determine available headroom for copy */
  	headlen = size;
  	if (headlen > IGC_RX_HDR_LEN)
@@ -160,7 +50,7 @@
  
  	/* align pull length to size of long to optimize memcpy performance */
  	memcpy(__skb_put(skb, headlen), va, ALIGN(headlen, sizeof(long)));
-@@ -3895,7 +3896,7 @@
+@@ -3895,7 +3895,7 @@
  	if (netif_running(netdev))
  		igc_down(adapter);
  
@@ -169,108 +59,144 @@
  	netdev->mtu = new_mtu;
  
  	if (netif_running(netdev))
-@@ -4726,6 +4727,7 @@
+@@ -4726,59 +4726,6 @@
  	return 0;
  }
  
-+/* not used in 4.x
- static bool is_base_time_past(ktime_t base_time, const struct timespec64 *now)
- {
- 	struct timespec64 b;
-@@ -4734,7 +4736,9 @@
- 
- 	return timespec64_compare(now, &b) > 0;
- }
-+*/
- 
-+/* not used in 4.x
- static bool validate_schedule(struct igc_adapter *adapter,
- 			      const struct tc_taprio_qopt_offload *qopt)
- {
-@@ -4747,11 +4751,11 @@
- 
- 	igc_ptp_read(adapter, &now);
- 
+-static bool is_base_time_past(ktime_t base_time, const struct timespec64 *now)
+-{
+-	struct timespec64 b;
+-
+-	b = ktime_to_timespec64(base_time);
+-
+-	return timespec64_compare(now, &b) > 0;
+-}
+-
+-static bool validate_schedule(struct igc_adapter *adapter,
+-			      const struct tc_taprio_qopt_offload *qopt)
+-{
+-	int queue_uses[IGC_MAX_TX_QUEUES] = { };
+-	struct timespec64 now;
+-	size_t n;
+-
+-	if (qopt->cycle_time_extension)
+-		return false;
+-
+-	igc_ptp_read(adapter, &now);
+-
 -	/* If we program the controller's BASET registers with a time
-+	* If we program the controller's BASET registers with a time
- 	 * in the future, it will hold all the packets until that
- 	 * time, causing a lot of TX Hangs, so to avoid that, we
- 	 * reject schedules that would start in the future.
+-	 * in the future, it will hold all the packets until that
+-	 * time, causing a lot of TX Hangs, so to avoid that, we
+-	 * reject schedules that would start in the future.
 -	 */
-+	 *
- 	if (!is_base_time_past(qopt->base_time, &now))
- 		return false;
- 
-@@ -4761,9 +4765,9 @@
- 
- 		e = &qopt->entries[n];
- 
+-	if (!is_base_time_past(qopt->base_time, &now))
+-		return false;
+-
+-	for (n = 0; n < qopt->num_entries; n++) {
+-		const struct tc_taprio_sched_entry *e;
+-		int i;
+-
+-		e = &qopt->entries[n];
+-
 -		/* i225 only supports "global" frame preemption
-+		* i225 only supports "global" frame preemption
- 		 * settings.
+-		 * settings.
 -		 */
-+		 *
- 		if (e->command != TC_TAPRIO_CMD_SET_GATES)
- 			return false;
- 
-@@ -4778,6 +4782,7 @@
- 
- 	return true;
- }
-+*/
- 
+-		if (e->command != TC_TAPRIO_CMD_SET_GATES)
+-			return false;
+-
+-		for (i = 0; i < adapter->num_tx_queues; i++) {
+-			if (e->gate_mask & BIT(i))
+-				queue_uses[i]++;
+-
+-			if (queue_uses[i] > 1)
+-				return false;
+-		}
+-	}
+-
+-	return true;
+-}
+-
  static int igc_tsn_enable_launchtime(struct igc_adapter *adapter,
  				     struct tc_etf_qopt_offload *qopt)
-@@ -4795,6 +4800,7 @@
+ {
+@@ -4795,76 +4742,12 @@
  	return igc_tsn_offload_apply(adapter);
  }
  
-+/* not used in 4.x
- static int igc_save_qbv_schedule(struct igc_adapter *adapter,
- 				 struct tc_taprio_qopt_offload *qopt)
- {
-@@ -4815,9 +4821,9 @@
- 	adapter->cycle_time = qopt->cycle_time;
- 	adapter->base_time = qopt->base_time;
- 
+-static int igc_save_qbv_schedule(struct igc_adapter *adapter,
+-				 struct tc_taprio_qopt_offload *qopt)
+-{
+-	u32 start_time = 0, end_time = 0;
+-	size_t n;
+-
+-	if (!qopt->enable) {
+-		adapter->base_time = 0;
+-		return 0;
+-	}
+-
+-	if (adapter->base_time)
+-		return -EALREADY;
+-
+-	if (!validate_schedule(adapter, qopt))
+-		return -EINVAL;
+-
+-	adapter->cycle_time = qopt->cycle_time;
+-	adapter->base_time = qopt->base_time;
+-
 -	/* FIXME: be a little smarter about cases when the gate for a
-+	* FIXME: be a little smarter about cases when the gate for a
- 	 * queue stays open for more than one entry.
+-	 * queue stays open for more than one entry.
 -	 */
-+	 *
- 	for (n = 0; n < qopt->num_entries; n++) {
- 		struct tc_taprio_sched_entry *e = &qopt->entries[n];
- 		int i;
-@@ -4839,7 +4845,9 @@
- 
- 	return 0;
- }
-+*/
- 
-+/* not used in 4.x
- static int igc_tsn_enable_qbv_scheduling(struct igc_adapter *adapter,
- 					 struct tc_taprio_qopt_offload *qopt)
- {
-@@ -4855,6 +4863,7 @@
- 
- 	return igc_tsn_offload_apply(adapter);
- }
-+*/
- 
+-	for (n = 0; n < qopt->num_entries; n++) {
+-		struct tc_taprio_sched_entry *e = &qopt->entries[n];
+-		int i;
+-
+-		end_time += e->interval;
+-
+-		for (i = 0; i < adapter->num_tx_queues; i++) {
+-			struct igc_ring *ring = adapter->tx_ring[i];
+-
+-			if (!(e->gate_mask & BIT(i)))
+-				continue;
+-
+-			ring->start_time = start_time;
+-			ring->end_time = end_time;
+-		}
+-
+-		start_time += e->interval;
+-	}
+-
+-	return 0;
+-}
+-
+-static int igc_tsn_enable_qbv_scheduling(struct igc_adapter *adapter,
+-					 struct tc_taprio_qopt_offload *qopt)
+-{
+-	struct igc_hw *hw = &adapter->hw;
+-	int err;
+-
+-	if (hw->mac.type != igc_i225)
+-		return -EOPNOTSUPP;
+-
+-	err = igc_save_qbv_schedule(adapter, qopt);
+-	if (err)
+-		return err;
+-
+-	return igc_tsn_offload_apply(adapter);
+-}
+-
  static int igc_setup_tc(struct net_device *dev, enum tc_setup_type type,
  			void *type_data)
-@@ -4862,8 +4871,10 @@
+ {
  	struct igc_adapter *adapter = netdev_priv(dev);
  
  	switch (type) {
-+/* not used in 4.x
- 	case TC_SETUP_QDISC_TAPRIO:
- 		return igc_tsn_enable_qbv_scheduling(adapter, type_data);
-+*/
- 
+-	case TC_SETUP_QDISC_TAPRIO:
+-		return igc_tsn_enable_qbv_scheduling(adapter, type_data);
+-
  	case TC_SETUP_QDISC_ETF:
  		return igc_tsn_enable_launchtime(adapter, type_data);
-@@ -5221,7 +5232,7 @@
+ 
+@@ -5221,7 +5104,7 @@
  	pcie_print_link_status(pdev);
  	netdev_info(netdev, "MAC: %pM\n", netdev->dev_addr);
  
@@ -279,41 +205,9 @@
  	/* Disable EEE for internal PHY devices */
  	hw->dev_spec._base.eee_enable = false;
  	adapter->flags &= ~IGC_FLAG_EEE;
---- a/igc_phy.c	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc_phy.c	2022-09-24 06:38:58.059302504 +0000
-@@ -785,3 +785,21 @@
- 
- 	return ret_val;
- }
-+
-+/**
-+ * igc_read_phy_fw_version - Read gPHY firmware version
-+ * @hw: pointer to the HW structure
-+ */
-+u16 igc_read_phy_fw_version(struct igc_hw *hw)
-+{
-+       struct igc_phy_info *phy = &hw->phy;
-+       u16 gphy_version = 0;
-+       u16 ret_val;
-+
-+       /* NVM image version is reported as firmware version for i225 device */
-+       ret_val = phy->ops.read_reg(hw, IGC_GPHY_VERSION, &gphy_version);
-+       if (ret_val)
-+               hw_dbg("igc_phy: read wrong gphy version\n");
-+
-+       return gphy_version;
-+}
---- a/igc_phy.h	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc_phy.h	2022-09-24 06:30:15.794742068 +0000
-@@ -17,5 +17,6 @@
- void igc_power_down_phy_copper(struct igc_hw *hw);
- s32 igc_write_phy_reg_gpy(struct igc_hw *hw, u32 offset, u16 data);
- s32 igc_read_phy_reg_gpy(struct igc_hw *hw, u32 offset, u16 *data);
-+u16 igc_read_phy_fw_version(struct igc_hw *hw);
- 
- #endif
---- igc_ptp.c	2022-09-23 12:17:01.000000000 +0000
-+++ ../igc-module/igc_ptp.c	2022-09-24 06:51:11.273659534 +0000
+diff -u -N -r igc-module-5.10.145/igc_ptp.c igc-module-5.10.146/igc_ptp.c
+--- a/igc_ptp.c	2022-09-28 09:10:41.000000000 +0000
++++ b/igc_ptp.c	2022-10-02 00:10:57.441665064 +0000
 @@ -83,21 +83,16 @@
  	return 0;
  }
@@ -348,13 +242,13 @@
  		adapter->ptp_caps.settime64 = igc_ptp_settime_i225;
  		adapter->ptp_caps.enable = igc_ptp_feature_enable_i225;
  		break;
---- a/igc_regs.h	2022-09-23 12:17:01.000000000 +0000
-+++ b/igc_regs.h	2022-09-24 06:35:35.752659231 +0000
-@@ -13,6 +13,7 @@
- #define IGC_MDICNFG		0x00E04  /* MDC/MDIO Configuration - RW */
- #define IGC_CONNSW		0x00034  /* Copper/Fiber switch control - RW */
- #define IGC_I225_PHPM		0x00E14  /* I225 PHY Power Management */
-+#define IGC_GPHY_VERSION	0x0001E  /* I225 gPHY Firmware Version */
+--- a/igc_ethtool.c	2022-09-28 09:10:41.000000000 +0000
++++ b/igc_ethtool.c	2022-10-02 01:03:02.876006970 +0000
+@@ -1899,7 +1912,6 @@
+ }
  
- /* Internal Packet Buffer Size Registers */
- #define IGC_RXPBS		0x02404  /* Rx Packet Buffer Size - RW */
+ static const struct ethtool_ops igc_ethtool_ops = {
+-	.supported_coalesce_params = ETHTOOL_COALESCE_USECS,
+ 	.get_drvinfo		= igc_ethtool_get_drvinfo,
+ 	.get_regs_len		= igc_ethtool_get_regs_len,
+ 	.get_regs		= igc_ethtool_get_regs,

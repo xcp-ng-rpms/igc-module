@@ -1,11 +1,8 @@
-%define vendor_name Intel
-%define vendor_label intel
-%define driver_name igc
 %define module_dir extra
 
 Summary: Driver for igc-module
 Name: igc-module
-Version: 5.10.145
+Version: 5.10.146
 Release: 1%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
@@ -13,6 +10,9 @@ Source: %{name}-%{version}.tar.gz
 
 Patch0: 0001-makefile.patch
 Patch1: 0002-backport.patch
+Patch2: 0003-fallthrough.patch
+Patch3: 0004-showversion.patch
+Patch4: 0005-i226.patch
 
 BuildRequires: gcc
 BuildRequires: kernel-devel
