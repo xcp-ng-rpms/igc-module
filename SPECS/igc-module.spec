@@ -53,6 +53,9 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 /lib/modules/%{kernel_version}/*/*.ko
 
 %changelog
+* Sat Oct 01 2022 Andrew Lindh <andrew@netplex.net> - 5.10.146-1
+- Update to kernel source 5.10.146 and split patches into specific functions
+
 * Fri Sep 23 2022 Andrew Lindh <andrew@netplex.net> - 5.10.145-1
 - Update Intel I225 driver from 5.10.145 kernel source
 
