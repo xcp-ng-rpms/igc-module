@@ -2,8 +2,8 @@
 
 Summary: Driver for igc-module
 Name: igc-module
-Version: 5.10.146
-Release: 2%{?dist}
+Version: 5.10.150
+Release: 1%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
 Source: %{name}-%{version}.tar.gz
@@ -53,15 +53,6 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 /lib/modules/%{kernel_version}/*/*.ko
 
 %changelog
-* Sat Oct 01 2022 Andrew Lindh <andrew@netplex.net> - 5.10.146-1
-- Update to kernel source 5.10.146 and split patches into specific functions
-
-* Fri Sep 23 2022 Andrew Lindh <andrew@netplex.net> - 5.10.145-1
-- Update Intel I225 driver from 5.10.145 kernel source
-
-* Fri Sep 16 2022 Samuel Verschelde <stormi-xcp@ylix.fr> - 4.20.17-2
-- Rebuild for XCP-ng 8.3
-
-* Tue Feb 15 2022 Rushikesh Jadhav <rushikesh7@gmail.com> - 4.20.17-1
-- Added driver igc from kernel 4.20.17
+* Thu Oct 27 2022 Andrew Lindh <andrew@netplex.net> - 5.10.150-1
+- Use kernel source 5.10.150 and patches for XCP driver support
 
