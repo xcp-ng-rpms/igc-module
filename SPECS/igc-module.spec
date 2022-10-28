@@ -56,3 +56,9 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 * Thu Oct 27 2022 Andrew Lindh <andrew@netplex.net> - 5.10.150-1
 - Use kernel source 5.10.150 and patches for XCP driver support
 
+* Fri Sep 16 2022 Samuel Verschelde <stormi-xcp@ylix.fr> - 4.20.17-2
+- Rebuild for XCP-ng 8.3
+
+* Tue Feb 15 2022 Rushikesh Jadhav <rushikesh7@gmail.com> - 4.20.17-1
+- Added driver igc from kernel 4.20.17
+
