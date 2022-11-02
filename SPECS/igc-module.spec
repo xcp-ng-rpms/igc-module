@@ -2,11 +2,17 @@
 
 Summary: Driver for igc-module
 Name: igc-module
-Version: 4.20.17
-Release: 2%{?dist}
+Version: 5.10.150
+Release: 1%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
 Source: %{name}-%{version}.tar.gz
+
+Patch0: 0001-makefile.patch
+Patch1: 0002-backport.patch
+Patch2: 0003-fallthrough.patch
+Patch3: 0004-showversion.patch
+Patch4: 0005-i226.patch
 
 BuildRequires: gcc
 BuildRequires: kernel-devel
@@ -47,6 +53,9 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 /lib/modules/%{kernel_version}/*/*.ko
 
 %changelog
+* Thu Oct 27 2022 Andrew Lindh <andrew@netplex.net> - 5.10.150-1
+- Use kernel source 5.10.150 and patches for XCP driver support
+
 * Fri Sep 16 2022 Samuel Verschelde <stormi-xcp@ylix.fr> - 4.20.17-2
 - Rebuild for XCP-ng 8.3
 

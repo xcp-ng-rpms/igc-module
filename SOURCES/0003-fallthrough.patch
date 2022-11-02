@@ -1,0 +1,47 @@
+
+### remove "fallthrough" because old gcc does not support it
+
+--- a/igc_ethtool.c	2022-09-28 09:10:41.000000000 +0000
++++ b/igc_ethtool.c	2022-10-02 00:54:23.615296353 +0000
+@@ -1018,11 +1035,9 @@
+ 	switch (cmd->flow_type) {
+ 	case TCP_V4_FLOW:
+ 		cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
+-		fallthrough;
+ 	case UDP_V4_FLOW:
+ 		if (adapter->flags & IGC_FLAG_RSS_FIELD_IPV4_UDP)
+ 			cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
+-		fallthrough;
+ 	case SCTP_V4_FLOW:
+ 	case AH_ESP_V4_FLOW:
+ 	case AH_V4_FLOW:
+@@ -1032,11 +1047,9 @@
+ 		break;
+ 	case TCP_V6_FLOW:
+ 		cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
+-		fallthrough;
+ 	case UDP_V6_FLOW:
+ 		if (adapter->flags & IGC_FLAG_RSS_FIELD_IPV6_UDP)
+ 			cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
+-		fallthrough;
+ 	case SCTP_V6_FLOW:
+ 	case AH_ESP_V6_FLOW:
+ 	case AH_V6_FLOW:
+--- a/igc_main.c	2022-09-28 09:10:41.000000000 +0000
++++ b/igc_main.c	2022-10-02 00:54:27.315300282 +0000
+@@ -980,7 +982,6 @@
+ 	switch (skb->csum_offset) {
+ 	case offsetof(struct tcphdr, check):
+ 		type_tucmd = IGC_ADVTXD_TUCMD_L4T_TCP;
+-		fallthrough;
+ 	case offsetof(struct udphdr, check):
+ 		break;
+ 	case offsetof(struct sctphdr, checksum):
+@@ -992,7 +993,6 @@
+ 			type_tucmd = IGC_ADVTXD_TUCMD_L4T_SCTP;
+ 			break;
+ 		}
+-		fallthrough;
+ 	default:
+ 		skb_checksum_help(skb);
+ 		goto csum_failed;
