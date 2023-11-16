@@ -1,9 +1,27 @@
 
 ### remove "fallthrough" because old gcc does not support it
 
---- a/igc_ethtool.c	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_ethtool.c	2022-10-02 00:54:23.615296353 +0000
-@@ -1018,11 +1035,9 @@
+--- a/igc_main.c	2023-08-01 01:35:57.518468340 +0000
++++ b.igc_main.c	2023-08-01 01:36:26.998581592 +0000
+@@ -1054,7 +1054,6 @@
+ 	switch (skb->csum_offset) {
+ 	case offsetof(struct tcphdr, check):
+ 		type_tucmd = IGC_ADVTXD_TUCMD_L4T_TCP;
+-		fallthrough;
+ 	case offsetof(struct udphdr, check):
+ 		break;
+ 	case offsetof(struct sctphdr, checksum):
+@@ -1063,7 +1062,6 @@
+ 			type_tucmd = IGC_ADVTXD_TUCMD_L4T_SCTP;
+ 			break;
+ 		}
+-		fallthrough;
+ 	default:
+ 		skb_checksum_help(skb);
+ 		goto csum_failed;
+--- a/igc_ethtool.c	2023-01-14 09:16:53.000000000 +0000
++++ b/igc_ethtool.c	2023-01-31 05:14:56.664254932 +0000
+@@ -1018,11 +1018,9 @@
  	switch (cmd->flow_type) {
  	case TCP_V4_FLOW:
  		cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
@@ -15,7 +33,7 @@
  	case SCTP_V4_FLOW:
  	case AH_ESP_V4_FLOW:
  	case AH_V4_FLOW:
-@@ -1032,11 +1047,9 @@
+@@ -1032,11 +1030,9 @@
  		break;
  	case TCP_V6_FLOW:
  		cmd->data |= RXH_L4_B_0_1 | RXH_L4_B_2_3;
@@ -27,21 +45,3 @@
  	case SCTP_V6_FLOW:
  	case AH_ESP_V6_FLOW:
  	case AH_V6_FLOW:
---- a/igc_main.c	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_main.c	2022-10-02 00:54:27.315300282 +0000
-@@ -980,7 +982,6 @@
- 	switch (skb->csum_offset) {
- 	case offsetof(struct tcphdr, check):
- 		type_tucmd = IGC_ADVTXD_TUCMD_L4T_TCP;
--		fallthrough;
- 	case offsetof(struct udphdr, check):
- 		break;
- 	case offsetof(struct sctphdr, checksum):
-@@ -992,7 +993,6 @@
- 			type_tucmd = IGC_ADVTXD_TUCMD_L4T_SCTP;
- 			break;
- 		}
--		fallthrough;
- 	default:
- 		skb_checksum_help(skb);
- 		goto csum_failed;

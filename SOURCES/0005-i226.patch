@@ -17,9 +17,9 @@
  	case IGC_DEV_ID_I221_V:
  	case IGC_DEV_ID_I226_BLANK_NVM:
  	case IGC_DEV_ID_I225_BLANK_NVM:
---- a/igc_defines.h	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_defines.h	2022-10-02 00:23:04.147325171 +0000
-@@ -467,6 +468,7 @@
+--- a/igc_defines.h	2023-01-14 09:16:53.000000000 +0000
++++ b/igc_defines.h	2023-01-31 05:17:13.236820392 +0000
+@@ -469,6 +469,7 @@
  
  /* Bit definitions for valid PHY IDs. I = Integrated E = External */
  #define I225_I_PHY_ID		0x67C9DC00
