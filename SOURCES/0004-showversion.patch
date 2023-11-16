@@ -1,5 +1,6 @@
 
 ### Add ethtool show version support from later driver source
+### Also show XCP driver version
 
 --- a/igc_defines.h	2022-09-28 09:10:41.000000000 +0000
 +++ b/igc_defines.h	2022-10-02 00:23:04.147325171 +0000
@@ -11,9 +12,9 @@
  
  /* NVM Word Offsets */
  #define NVM_CHECKSUM_REG		0x003F
---- a/igc.h	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc.h	2022-10-02 00:10:57.437665056 +0000
-@@ -217,6 +217,7 @@
+--- a/igc.h	2023-08-01 02:39:54.837211910 +0000
++++ a/igc.h	2023-08-01 02:40:18.961304397 +0000
+@@ -224,6 +224,7 @@
  	struct timecounter tc;
  	struct timespec64 prev_ptp_time; /* Pre-reset PTP clock */
  	ktime_t ptp_reset_start; /* Reset time in clock mono */
@@ -21,9 +22,17 @@
  };
  
  void igc_up(struct igc_adapter *adapter);
---- a/igc_ethtool.c	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_ethtool.c	2022-10-02 00:10:57.437665056 +0000
-@@ -129,10 +129,27 @@
+@@ -249,6 +250,7 @@
+ void igc_regs_dump(struct igc_adapter *adapter);
+ 
+ extern char igc_driver_name[];
++extern const char igc_driver_version[];
+ 
+ #define IGC_REGS_LEN			740
+ 
+--- a/igc_ethtool.c	2023-08-01 02:35:23.732173021 +0000
++++ b/igc_ethtool.c	2023-08-01 02:35:11.256125236 +0000
+@@ -129,10 +129,28 @@
  				    struct ethtool_drvinfo *drvinfo)
  {
  	struct igc_adapter *adapter = netdev_priv(netdev);
@@ -32,8 +41,8 @@
 +	u16 gphy_version;
  
  	strlcpy(drvinfo->driver,  igc_driver_name, sizeof(drvinfo->driver));
- 
--	/* add fw_version here */
++	strlcpy(drvinfo->version, igc_driver_version, sizeof(drvinfo->version));
++
 +	/* NVM image version is reported as firmware version for i225 device */
 +	hw->nvm.ops.read(hw, IGC_NVM_DEV_STARTER, 1, &nvm_version);
 +
@@ -48,11 +57,12 @@
 +
 +	strscpy(drvinfo->fw_version, adapter->fw_version,
 +		sizeof(drvinfo->fw_version));
-+
+ 
+-	/* add fw_version here */
  	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
  		sizeof(drvinfo->bus_info));
-
-@@ -566,6 +566,24 @@
+ 
+@@ -549,6 +567,24 @@
  	return ret_val;
  }
  
@@ -96,3 +106,21 @@
  
  /* Internal Packet Buffer Size Registers */
  #define IGC_RXPBS		0x02404  /* Rx Packet Buffer Size - RW */
+--- a/igc_main.c	2023-08-01 02:33:32.007745202 +0000
++++ b/igc_main.c	2023-08-01 02:34:06.283876422 +0000
+@@ -19,6 +19,7 @@
+ #include "igc_tsn.h"
+ 
+ #define DRV_SUMMARY	"Intel(R) 2.5G Ethernet Linux Driver"
++#define DRV_VERSION	"5.10.200-1"
+ 
+ #define DEFAULT_MSG_ENABLE (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK)
+ 
+@@ -32,6 +33,7 @@
+ 
+ char igc_driver_name[] = "igc";
+ static const char igc_driver_string[] = DRV_SUMMARY;
++const char igc_driver_version[] = DRV_VERSION;
+ static const char igc_copyright[] =
+ 	"Copyright(c) 2018 Intel Corporation.";
+ 

@@ -2,7 +2,7 @@
 
 Summary: Driver for igc-module
 Name: igc-module
-Version: 5.10.150
+Version: 5.10.200
 Release: 1%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
@@ -53,6 +53,9 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 /lib/modules/%{kernel_version}/*/*.ko
 
 %changelog
+* Wed Nov 8 2023 Andrew Lindh <andrew@netplex.net> - 5.10.200-1
+- Use kernel source 5.10.200 and patches for XCP driver support
+
 * Thu Oct 27 2022 Andrew Lindh <andrew@netplex.net> - 5.10.150-1
 - Use kernel source 5.10.150 and patches for XCP driver support
 
