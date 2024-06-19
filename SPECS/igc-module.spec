@@ -2,17 +2,20 @@
 
 Summary: Driver for igc-module
 Name: igc-module
-Version: 5.10.200
+Version: 5.10.214
 Release: 1%{?dist}
 License: GPL
 # Sources extracted from the Linux kernel %{version}
 Source: %{name}-%{version}.tar.gz
 
-Patch0: 0001-makefile.patch
-Patch1: 0002-backport.patch
-Patch2: 0003-fallthrough.patch
-Patch3: 0004-showversion.patch
-Patch4: 0005-i226.patch
+Patch0: 0001-Change-makefile-for-building-igc.patch
+Patch1: 0002-Some-backports-from-higher-kernel-version.patch
+Patch2: 0003-gettimex64-is-not-supported-until-kernel-v5.0.patch
+Patch3: 0004-supported_coalesce_params-is-not-supported-until-ker.patch
+Patch4: 0005-TAPRIO-was-not-supported-until-kernel-v5.18.patch
+
+# XCP-ng specific patch
+Patch1000: 1000-showversion.patch
 
 BuildRequires: gcc
 BuildRequires: kernel-devel
@@ -53,6 +56,11 @@ find %{buildroot}/lib/modules/%{kernel_version} -name "*.ko" -type f | xargs chm
 /lib/modules/%{kernel_version}/*/*.ko
 
 %changelog
+* Thu Jun 20 2024 Thierry Escande <thierry.escande@vates.tech> - 5.10.214-1
+- Import sources and patches from intel-igc-5.10.214-3.xs8.src.rpm
+- Rebased showversion patch (And update driver version)
+- Drop i226 patch per Andrew feedback
+
 * Wed Nov 8 2023 Andrew Lindh <andrew@netplex.net> - 5.10.200-1
 - Use kernel source 5.10.200 and patches for XCP driver support
 
