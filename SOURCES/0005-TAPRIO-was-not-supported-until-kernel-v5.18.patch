@@ -1,88 +1,23 @@
+From 78bcb3a52165e6f5345ccccad9e9a53dea1a065c Mon Sep 17 00:00:00 2001
+From: Stephen Cheng <stephen.cheng@cloud.com>
+Date: Fri, 12 Apr 2024 02:21:28 +0100
+Subject: [PATCH 5/5] TAPRIO was not supported until kernel v5.18
 
-### Backport code to kernel 4.19 by removing nerwer code that does not work
-### in the older kernel and cange functions back to older ones that work in 4.19
-### 	remove ETHTOOL_COALESCE_USECS
-### 	remove TC_SETUP_QDISC_TAPRIO
-### 	change net_prefetch to prefetch
-### 	change netdev_xmit_more to skb->xmit_more
-### 	change DPM_FLAG_NO_DIRECT_COMPLETE to DPM_FLAG_NEVER_SKIP
-###	add new needed skbuff code
-###
-### Change MTU change notice to netdev_info becuase it's not debugging
-###
-###
-### Change gettimex64 back to gettime64
+Remove TC_SETUP_QDISC_TAPRIO related handling.
+TC_SETUP_QDISC_TAPRIO was introduced in the below commit:
+git describe --contains cf2df74e202d81b09f09d84c2d8903e0e87e9274
+v5.18~19^2~3^2~4
 
---- a/igc_main.c	2023-07-27 06:44:44.000000000 +0000
-+++ b/igc_main.c	2023-08-01 02:04:34.725132607 +0000
-@@ -10,6 +10,7 @@
- #include <linux/ip.h>
- #include <linux/pm_runtime.h>
- #include <linux/pci.h>
-+#include <linux/skbuff.h>
- #include <net/pkt_sched.h>
- 
- #include <net/ipv6.h>
-@@ -67,6 +68,11 @@
- 	latency_invalid = 255
- };
- 
-+static inline bool skb_csum_is_sctp(struct sk_buff *skb)
-+{
-+        return skb->csum_not_inet;
-+}
-+
- void igc_reset(struct igc_adapter *adapter)
- {
- 	struct net_device *dev = adapter->netdev;
-@@ -1262,7 +1268,8 @@
- 	/* Make sure there is space in the ring for the next send. */
- 	igc_maybe_stop_tx(tx_ring, DESC_NEEDED);
- 
--	if (netif_xmit_stopped(txring_txq(tx_ring)) || !netdev_xmit_more()) {
-+	if (netif_xmit_stopped(txring_txq(tx_ring)) || !skb->xmit_more) {
-+
- 		writel(i, tx_ring->tail);
- 	}
- 
-@@ -1691,7 +1698,7 @@
- 	struct sk_buff *skb;
- 
- 	/* prefetch first cache line of first page */
--	net_prefetch(va);
-+	prefetch(va);
- 
- 	/* build an skb around the page buffer */
- 	skb = build_skb(va - IGC_SKB_PAD, truesize);
-@@ -1727,7 +1734,7 @@
- 	struct sk_buff *skb;
- 
- 	/* prefetch first cache line of first page */
--	net_prefetch(va);
-+	prefetch(va);
- 
- 	/* allocate a skb to store the frags */
- 	skb = napi_alloc_skb(&rx_ring->q_vector->napi, IGC_RX_HDR_LEN);
-@@ -1743,7 +1750,8 @@
- 	/* Determine available headroom for copy */
- 	headlen = size;
- 	if (headlen > IGC_RX_HDR_LEN)
--		headlen = eth_get_headlen(skb->dev, va, IGC_RX_HDR_LEN);
-+		headlen = eth_get_headlen(va, IGC_RX_HDR_LEN);
-+
- 
- 	/* align pull length to size of long to optimize memcpy performance */
- 	memcpy(__skb_put(skb, headlen), va, ALIGN(headlen, sizeof(long)));
-@@ -4025,7 +4033,7 @@
- 	if (netif_running(netdev))
- 		igc_down(adapter);
- 
--	netdev_dbg(netdev, "changing MTU from %d to %d\n", netdev->mtu, new_mtu);
-+	netdev_info(netdev, "changing MTU from %d to %d\n", netdev->mtu, new_mtu);
- 	netdev->mtu = new_mtu;
- 
- 	if (netif_running(netdev))
-@@ -4856,65 +4864,6 @@
+Signed-off-by: Stephen Cheng <stephen.cheng@cloud.com>
+---
+ igc_main.c | 158 -----------------------------------------------------
+ 1 file changed, 158 deletions(-)
+
+diff --git a/igc_main.c b/igc_main.c
+index 631ce79..8b1d77e 100644
+--- a/igc_main.c
++++ b/igc_main.c
+@@ -4856,65 +4856,6 @@ static int igc_save_launchtime_params(struct igc_adapter *adapter, int queue,
  	return 0;
  }
  
@@ -148,7 +83,7 @@
  static int igc_tsn_enable_launchtime(struct igc_adapter *adapter,
  				     struct tc_etf_qopt_offload *qopt)
  {
-@@ -4931,111 +4880,12 @@
+@@ -4931,111 +4872,12 @@ static int igc_tsn_enable_launchtime(struct igc_adapter *adapter,
  	return igc_tsn_offload_apply(adapter);
  }
  
@@ -260,58 +195,6 @@
  	case TC_SETUP_QDISC_ETF:
  		return igc_tsn_enable_launchtime(adapter, type_data);
  
-@@ -5393,7 +5243,7 @@
- 	pcie_print_link_status(pdev);
- 	netdev_info(netdev, "MAC: %pM\n", netdev->dev_addr);
- 
--	dev_pm_set_driver_flags(&pdev->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
-+	dev_pm_set_driver_flags(&pdev->dev, DPM_FLAG_NEVER_SKIP);
- 	/* Disable EEE for internal PHY devices */
- 	hw->dev_spec._base.eee_enable = false;
- 	adapter->flags &= ~IGC_FLAG_EEE;
---- a/igc_ptp.c	2023-07-27 06:44:44.000000000 +0000
-+++ b/igc_ptp.c	2023-08-01 01:44:59.252583293 +0000
-@@ -83,21 +83,16 @@
- 	return 0;
- }
- 
--static int igc_ptp_gettimex64_i225(struct ptp_clock_info *ptp,
--				   struct timespec64 *ts,
--				   struct ptp_system_timestamp *sts)
-+static int igc_ptp_gettime_i225(struct ptp_clock_info *ptp,
-+				   struct timespec64 *ts)
- {
- 	struct igc_adapter *igc = container_of(ptp, struct igc_adapter,
- 					       ptp_caps);
--	struct igc_hw *hw = &igc->hw;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&igc->tmreg_lock, flags);
- 
--	ptp_read_system_prets(sts);
--	ts->tv_nsec = rd32(IGC_SYSTIML);
--	ts->tv_sec = rd32(IGC_SYSTIMH);
--	ptp_read_system_postts(sts);
-+	igc_ptp_read(igc, ts);
- 
- 	spin_unlock_irqrestore(&igc->tmreg_lock, flags);
- 
-@@ -502,7 +497,7 @@
- 		adapter->ptp_caps.max_adj = 62499999;
- 		adapter->ptp_caps.adjfine = igc_ptp_adjfine_i225;
- 		adapter->ptp_caps.adjtime = igc_ptp_adjtime_i225;
--		adapter->ptp_caps.gettimex64 = igc_ptp_gettimex64_i225;
-+		adapter->ptp_caps.gettime64 = igc_ptp_gettime_i225;
- 		adapter->ptp_caps.settime64 = igc_ptp_settime_i225;
- 		adapter->ptp_caps.enable = igc_ptp_feature_enable_i225;
- 		break;
---- a/igc_ethtool.c	2023-08-01 01:38:52.683149592 +0000
-+++ b/igc_ethtool.c	2023-08-01 01:44:59.256583308 +0000
-@@ -1916,7 +1916,6 @@
- }
- 
- static const struct ethtool_ops igc_ethtool_ops = {
--	.supported_coalesce_params = ETHTOOL_COALESCE_USECS,
- 	.get_drvinfo		= igc_ethtool_get_drvinfo,
- 	.get_regs_len		= igc_ethtool_get_regs_len,
- 	.get_regs		= igc_ethtool_get_regs,
+-- 
+2.41.0
+

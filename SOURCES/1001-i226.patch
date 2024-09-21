@@ -1,9 +1,11 @@
 
 ### add more I226 support to driver
 
---- a/igc_base.c	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_base.c	2022-10-02 00:21:18.931040534 +0000
-@@ -205,11 +205,13 @@
+diff --git a/igc_base.c b/igc_base.c
+index 7f3523f..f831d61 100644
+--- a/igc_base.c
++++ b/igc_base.c
+@@ -205,11 +205,13 @@ static s32 igc_get_invariants_base(struct igc_hw *hw)
  	case IGC_DEV_ID_I220_V:
  	case IGC_DEV_ID_I225_K:
  	case IGC_DEV_ID_I225_K2:
@@ -17,9 +19,11 @@
  	case IGC_DEV_ID_I221_V:
  	case IGC_DEV_ID_I226_BLANK_NVM:
  	case IGC_DEV_ID_I225_BLANK_NVM:
---- a/igc_defines.h	2023-01-14 09:16:53.000000000 +0000
-+++ b/igc_defines.h	2023-01-31 05:17:13.236820392 +0000
-@@ -469,6 +469,7 @@
+diff --git a/igc_defines.h b/igc_defines.h
+index fe6ff3b..0575a1e 100644
+--- a/igc_defines.h
++++ b/igc_defines.h
+@@ -470,6 +470,7 @@
  
  /* Bit definitions for valid PHY IDs. I = Integrated E = External */
  #define I225_I_PHY_ID		0x67C9DC00
@@ -27,8 +31,10 @@
  
  /* MDI Control */
  #define IGC_MDIC_DATA_MASK	0x0000FFFF
---- a/igc_hw.h	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_hw.h	2022-10-02 00:25:24.127683663 +0000
+diff --git a/igc_hw.h b/igc_hw.h
+index 7e29f41..8bba1c4 100644
+--- a/igc_hw.h
++++ b/igc_hw.h
 @@ -24,6 +24,7 @@
  #define IGC_DEV_ID_I225_K2			0x3101
  #define IGC_DEV_ID_I226_K			0x3102
@@ -37,9 +43,11 @@
  #define IGC_DEV_ID_I225_IT			0x0D9F
  #define IGC_DEV_ID_I226_LM			0x125B
  #define IGC_DEV_ID_I226_V			0x125C
---- a/igc_main.c	2022-09-28 09:10:41.000000000 +0000
-+++ b/igc_main.c	2022-10-02 00:54:27.315300282 +0000
-@@ -46,7 +46,9 @@
+diff --git a/igc_main.c b/igc_main.c
+index 010a7c3..f767ba3 100644
+--- a/igc_main.c
++++ b/igc_main.c
+@@ -48,7 +48,9 @@ static const struct pci_device_id igc_pci_tbl[] = {
  	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I220_V), board_base },
  	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I225_K), board_base },
  	{ PCI_VDEVICE(INTEL, IGC_DEV_ID_I225_K2), board_base },
